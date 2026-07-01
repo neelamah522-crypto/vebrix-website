@@ -883,7 +883,7 @@
   <div class="stat reveal"><h3>10+</h3><p>Projects Delivered</p></div>
   <div class="stat reveal"><h3>100%</h3><p>Client Satisfaction</p></div>
   <div class="stat reveal"><h3>7 Days</h3><p>Avg. Delivery</p></div>
-  <div class="stat reveal"><h3>24/7</h3><p>Support</p></div>
+  <div class="stat reveal"><h3>24/7</h3><p>Customer Service</p></div>
 </div>
 
 <!-- SERVICES -->
@@ -1000,7 +1000,7 @@
           <div class="why-point-icon">🛠️</div>
           <div>
             <h4>Free Support</h4>
-            <p>After delivery support included. I'm always available on WhatsApp.</p>
+            <p>24/7 customer service available. I'm always available on WhatsApp & Email — anytime you need help.</p>
           </div>
         </div>
       </div>
@@ -1127,7 +1127,20 @@
       alert('Please enter your name and phone number.');
       return;
     }
-    window.open('https://wa.me/919617004193', '_blank');
+    const business = document.getElementById('businessName').value.trim();
+    const type = document.getElementById('websiteType').value;
+    const msg = document.getElementById('message').value.trim();
+
+    const waMsg = encodeURIComponent(
+      '🌐 *New Booking Request — Vebrix*\n\n' +
+      '👤 *Name:* ' + name + '\n' +
+      '📱 *Phone:* ' + phone + '\n' +
+      '🏢 *Business:* ' + (business || 'Not specified') + '\n' +
+      '💻 *Website Type:* ' + (type || 'Not specified') + '\n' +
+      '💬 *Message:* ' + (msg || 'No message')
+    );
+
+    window.open('https://wa.me/919617004193?text=' + waMsg, '_blank');
     document.getElementById('successMsg').style.display = 'block';
     document.getElementById('clientName').value = '';
     document.getElementById('clientPhone').value = '';
