@@ -113,8 +113,8 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      opacity: 0.18;
-      filter: saturate(1.4) hue-rotate(200deg);
+      opacity: 0.28;
+      filter: saturate(1.2) hue-rotate(220deg) brightness(0.9);
     }
     .hero-bg::after {
       content: '';
@@ -864,7 +864,7 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-bg"><img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1600&q=80" alt="" aria-hidden="true" loading="eager"/></div>
+  <div class="hero-bg"><img src="https://images.unsplash.com/photo-1551650975-87deedd944c3?w=1600&q=80" alt="" aria-hidden="true" loading="eager"/></div>
   <div class="hero-grid"></div>
 
   <div class="hero-badge">
@@ -1171,8 +1171,8 @@
   // Project URL and anon/public API key (Supabase dashboard → Settings → API).
   // See the setup instructions provided alongside this file.
   // =====================================================================
-  const SUPABASE_URL = 'yjwttrcvpvngrqbsvrwy';
-  const SUPABASE_ANON_KEY = 'https://yjwttrcvpvngrqbsvrwy.supabase.co';
+  const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
   let supabaseClient = null;
   const supabaseConfigured =
@@ -1231,17 +1231,21 @@
       console.warn('Supabase is not configured yet — see SUPABASE_SETUP.md');
     }
 
-    // Also open WhatsApp so Anand gets an instant notification,
-    // even when the database save is the source of truth.
-    const waMsg = encodeURIComponent(
-      '🌐 *New Booking Request — Vebrix*\n\n' +
-      '👤 *Name:* ' + name + '\n' +
-      '📱 *Phone:* ' + phone + '\n' +
-      '🏢 *Business:* ' + (business || 'Not specified') + '\n' +
-      '💻 *Website Type:* ' + (type || 'Not specified') + '\n' +
-      '💬 *Message:* ' + (msg || 'No message')
-    );
-    window.open('https://wa.me/919617004193?text=' + waMsg, '_blank');
+    if (supabaseClient) {
+      // Database is configured — save silently, no WhatsApp popup.
+    } else {
+      // Supabase credentials not added yet — fall back to opening
+      // WhatsApp so the form still works during setup.
+      const waMsg = encodeURIComponent(
+        '🌐 *New Booking Request — Vebrix*\n\n' +
+        '👤 *Name:* ' + name + '\n' +
+        '📱 *Phone:* ' + phone + '\n' +
+        '🏢 *Business:* ' + (business || 'Not specified') + '\n' +
+        '💻 *Website Type:* ' + (type || 'Not specified') + '\n' +
+        '💬 *Message:* ' + (msg || 'No message')
+      );
+      window.open('https://wa.me/919617004193?text=' + waMsg, '_blank');
+    }
 
     submitBtn.disabled = false;
     btnSpinner.style.display = 'none';
@@ -1251,7 +1255,7 @@
       errorMsg.style.display = 'block';
     } else {
       successMsg.textContent = savedToDatabase
-        ? '✅ Request saved! Anand will contact you on WhatsApp within 24 hours.'
+        ? '✅ Request received! Anand will contact you on WhatsApp within 24 hours.'
         : '✅ Request sent! Anand will contact you on WhatsApp within 24 hours.';
       successMsg.style.display = 'block';
       document.getElementById('clientName').value = '';
