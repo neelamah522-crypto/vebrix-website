@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Vebrix — Websites That Grow Businesses</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -654,6 +655,17 @@
       width: 500px; height: 500px;
       background: radial-gradient(circle, rgba(79,70,229,0.1) 0%, transparent 70%);
       pointer-events: none;
+      z-index: 0;
+    }
+
+    #bookingCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.55;
+      pointer-events: none;
     }
 
     .booking-inner {
@@ -731,11 +743,39 @@
       box-shadow: 0 8px 24px rgba(79,70,229,0.35);
     }
 
+    .submit-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .success-msg {
       display: none;
       background: rgba(34,197,94,0.1);
       border: 1px solid rgba(34,197,94,0.3);
       color: #4ade80;
+      padding: 16px;
+      border-radius: 10px;
+      margin-top: 16px;
+      font-weight: 500;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .error-msg {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #f87171;
       padding: 16px;
       border-radius: 10px;
       margin-top: 16px;
@@ -824,7 +864,7 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-bg"><img src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80" alt="" aria-hidden="true" loading="eager"/></div>
+  <div class="hero-bg"><img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1600&q=80" alt="" aria-hidden="true" loading="eager"/></div>
   <div class="hero-grid"></div>
 
   <div class="hero-badge">
@@ -1010,6 +1050,7 @@
 
 <!-- BOOKING -->
 <div class="booking-section" id="booking">
+  <canvas id="bookingCanvas"></canvas>
   <div class="booking-inner reveal">
     <div class="section-label" style="text-align:center">Get Started</div>
     <h2>Book a Free Consultation</h2>
@@ -1044,9 +1085,15 @@
       <label>Tell me about your business</label>
       <textarea id="message" placeholder="What does your business do? Any specific requirements?"></textarea>
     </div>
-    <button class="submit-btn" onclick="submitForm()">📩 Send My Request</button>
+    <button class="submit-btn" id="submitBtn" onclick="submitForm()">
+      <span class="btn-spinner" id="btnSpinner"></span>
+      <span id="btnLabel">📩 Send My Request</span>
+    </button>
     <div class="success-msg" id="successMsg">
-      ✅ Request sent! Anand will contact you on WhatsApp within 24 hours.
+      ✅ Request saved! Anand will contact you on WhatsApp within 24 hours.
+    </div>
+    <div class="error-msg" id="errorMsg">
+      ⚠️ Something went wrong saving your request. Please try again or message us directly on WhatsApp.
     </div>
   </div>
 </div>
@@ -1119,8 +1166,25 @@
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
+  // =====================================================================
+  // SUPABASE CONFIG — replace these two values with your own project's
+  // Project URL and anon/public API key (Supabase dashboard → Settings → API).
+  // See the setup instructions provided alongside this file.
+  // =====================================================================
+  const SUPABASE_URL = 'yjwttrcvpvngrqbsvrwy';
+  const SUPABASE_ANON_KEY = 'https://yjwttrcvpvngrqbsvrwy.supabase.co';
+
+  let supabaseClient = null;
+  const supabaseConfigured =
+    SUPABASE_URL.startsWith('https://') &&
+    !SUPABASE_ANON_KEY.startsWith('YOUR_');
+
+  if (supabaseConfigured && window.supabase) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
   // Form submit
-  function submitForm() {
+  async function submitForm() {
     const name = document.getElementById('clientName').value.trim();
     const phone = document.getElementById('clientPhone').value.trim();
     if (!name || !phone) {
@@ -1131,6 +1195,44 @@
     const type = document.getElementById('websiteType').value;
     const msg = document.getElementById('message').value.trim();
 
+    const submitBtn = document.getElementById('submitBtn');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const btnLabel = document.getElementById('btnLabel');
+    const successMsg = document.getElementById('successMsg');
+    const errorMsg = document.getElementById('errorMsg');
+
+    successMsg.style.display = 'none';
+    errorMsg.style.display = 'none';
+    submitBtn.disabled = true;
+    btnSpinner.style.display = 'inline-block';
+    btnLabel.textContent = 'Sending...';
+
+    let savedToDatabase = false;
+    let dbErrorOccurred = false;
+
+    if (supabaseClient) {
+      try {
+        const { error } = await supabaseClient.from('bookings').insert([{
+          name: name,
+          phone: phone,
+          business_name: business || null,
+          website_type: type || null,
+          message: msg || null
+        }]);
+        if (error) throw error;
+        savedToDatabase = true;
+      } catch (err) {
+        console.error('Supabase insert failed:', err);
+        dbErrorOccurred = true;
+      }
+    } else {
+      // Supabase credentials not added yet — fall back to the
+      // WhatsApp-only flow so the form still works during setup.
+      console.warn('Supabase is not configured yet — see SUPABASE_SETUP.md');
+    }
+
+    // Also open WhatsApp so Anand gets an instant notification,
+    // even when the database save is the source of truth.
     const waMsg = encodeURIComponent(
       '🌐 *New Booking Request — Vebrix*\n\n' +
       '👤 *Name:* ' + name + '\n' +
@@ -1139,15 +1241,98 @@
       '💻 *Website Type:* ' + (type || 'Not specified') + '\n' +
       '💬 *Message:* ' + (msg || 'No message')
     );
-
     window.open('https://wa.me/919617004193?text=' + waMsg, '_blank');
-    document.getElementById('successMsg').style.display = 'block';
-    document.getElementById('clientName').value = '';
-    document.getElementById('clientPhone').value = '';
-    document.getElementById('businessName').value = '';
-    document.getElementById('websiteType').value = '';
-    document.getElementById('message').value = '';
+
+    submitBtn.disabled = false;
+    btnSpinner.style.display = 'none';
+    btnLabel.textContent = '📩 Send My Request';
+
+    if (dbErrorOccurred) {
+      errorMsg.style.display = 'block';
+    } else {
+      successMsg.textContent = savedToDatabase
+        ? '✅ Request saved! Anand will contact you on WhatsApp within 24 hours.'
+        : '✅ Request sent! Anand will contact you on WhatsApp within 24 hours.';
+      successMsg.style.display = 'block';
+      document.getElementById('clientName').value = '';
+      document.getElementById('clientPhone').value = '';
+      document.getElementById('businessName').value = '';
+      document.getElementById('websiteType').value = '';
+      document.getElementById('message').value = '';
+    }
   }
+
+  // =====================================================================
+  // BOOKING SECTION — animated particle network background
+  // =====================================================================
+  (function initBookingCanvas() {
+    const canvas = document.getElementById('bookingCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const section = canvas.parentElement;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let width, height, particles;
+    const COLORS = ['#4f46e5', '#818cf8', '#c084fc'];
+
+    function resize() {
+      width = canvas.width = section.offsetWidth;
+      height = canvas.height = section.offsetHeight;
+      const count = Math.min(70, Math.floor((width * height) / 18000));
+      particles = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        r: Math.random() * 1.6 + 0.6,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)]
+      }));
+    }
+
+    function step() {
+      ctx.clearRect(0, 0, width, height);
+
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > width) p.vx *= -1;
+        if (p.y < 0 || p.y > height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      }
+
+      const linkDist = 140;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i], b = particles[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < linkDist) {
+            ctx.strokeStyle = `rgba(129,140,248,${(1 - dist / linkDist) * 0.25})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      if (!prefersReducedMotion) requestAnimationFrame(step);
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    if (prefersReducedMotion) {
+      step(); // draw a single static frame
+    } else {
+      requestAnimationFrame(step);
+    }
+  })();
 </script>
 </body>
 </html>
