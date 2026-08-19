@@ -1138,13 +1138,13 @@ button, a{ touch-action: manipulation }
         <div class="text-[12px] font-[600] text-[#166534] mt-1">Reply in 2h →</div>
       </div>
     </a>
-    <a href="/cdn-cgi/l/email-protection#13707c7d6772706753657671617a6b3d7a7d" class="card21 p-6 flex items-center gap-4 hover:-translate-y-1">
+    <a href="/cdn-cgi/l/email-protection#fe9d91908a9f9d8abe889b9c8c9786d09790" class="card21 p-6 flex items-center gap-4 hover:-translate-y-1">
       <div class="w-12 h-12 rounded-2xl bg-[#FFF1F2] border border-[#FECDD3] grid place-items-center">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF2D87" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 6l10 7 10-7"/></svg>
       </div>
       <div>
         <div class="font-[700] text-[14px]">Email</div>
-        <div class="text-[13px] text-[#6B7280]"><span class="__cf_email__" data-cfemail="21424e4f55404255615744435348590f484f">[email&#160;protected]</span></div>
+        <div class="text-[13px] text-[#6B7280]"><span class="__cf_email__" data-cfemail="86e5e9e8f2e7e5f2c6f0e3e4f4effea8efe8">[email&#160;protected]</span></div>
         <div class="text-[12px] font-[600] text-[#BE123C] mt-1">Send email →</div>
       </div>
     </a>
@@ -1659,8 +1659,23 @@ async function submitForm(){
   }
   btn.disabled=false; spinner.classList.add('hidden'); label.textContent='Send My Request — Get 3D Preview →';
   if(dbError){
-    // Show detailed error + auto fallback to WhatsApp so lead is not lost
-    errorMsg.innerHTML = `⚠️ Database save failed: <span style="font-weight:600">${errorDetail}</span><br><span style="font-size:12px; opacity:0.9">Supabase RLS / Table missing ya key galat ho sakta hai. Lekin WhatsApp se bhej dete hai...</span><br><a href="#" onclick="event.preventDefault(); window.open('https://wa.me/919617004193?text='+encodeURIComponent('🌐 *New Booking Request — Vebrix 3D*\\n\\n👤 *Name:* '+document.getElementById('clientName').value+'\\n📱 *Phone:* '+document.getElementById('clientPhone').value),'_blank')" style="display:inline-block; margin-top:8px; padding:8px 16px; background:#0A0A0B; color:white; border-radius:999px; font-size:12px; font-weight:700; text-decoration:none">📱 WhatsApp pe bhejo →</a> <button onclick="this.parentElement.style.display='none'" style="margin-left:8px; font-size:12px; text-decoration:underline; background:none; border:none; cursor:pointer">Close</button>`;
+    // If it's just network/CORS "Failed to fetch", don't scare user - just use WhatsApp fallback silently
+    const isNetworkError = errorDetail.toLowerCase().includes('failed to fetch') || errorDetail.toLowerCase().includes('network') || errorDetail.toLowerCase().includes('fetch');
+    if(isNetworkError){
+      console.log('Network error - falling back to WhatsApp silently');
+      successMsg.innerHTML = `✅ Opening WhatsApp... <span style="font-size:12px; opacity:0.8">Database offline hai, isliye WhatsApp se bhej rahe hai</span><br><a href="#" onclick="event.preventDefault(); openWhatsApp()" style="display:inline-block; margin-top:8px; padding:8px 16px; background:#25D366; color:white; border-radius:999px; font-size:12px; font-weight:700; text-decoration:none">📱 WhatsApp pe bhejo →</a>`;
+      successMsg.style.display='block';
+      setTimeout(openWhatsApp, 800);
+      // Also clear form
+      document.getElementById('clientName').value='';
+      document.getElementById('clientPhone').value='';
+      document.getElementById('businessName').value='';
+      document.getElementById('websiteType').value='';
+      document.getElementById('message').value='';
+      return;
+    }
+    // For other errors (RLS, table missing) show detailed
+    errorMsg.innerHTML = `⚠️ Database save failed: <span style="font-weight:600">${errorDetail}</span><br><span style="font-size:12px; opacity:0.9">Supabase RLS / Table missing ya key galat ho sakta hai. Lekin WhatsApp se bhej dete hai...</span><br><a href="#" onclick="event.preventDefault(); openWhatsApp()" style="display:inline-block; margin-top:8px; padding:8px 16px; background:#0A0A0B; color:white; border-radius:999px; font-size:12px; font-weight:700; text-decoration:none">📱 WhatsApp pe bhejo →</a> <button onclick="this.parentElement.style.display='none'" style="margin-left:8px; font-size:12px; text-decoration:underline; background:none; border:none; cursor:pointer">Close</button>`;
     errorMsg.style.display='block';
     // Auto open WhatsApp after 1.2 sec so user doesn't lose lead
     setTimeout(openWhatsApp, 1200);
@@ -1684,5 +1699,5 @@ async function submitForm(){
   }
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2d945fc1c6b6d9f',t:'MTc4NzE0MzcxNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
